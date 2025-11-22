@@ -28,6 +28,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.local
 
 volumes:
   db-data:
