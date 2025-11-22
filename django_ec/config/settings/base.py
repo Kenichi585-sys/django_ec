@@ -14,6 +14,7 @@ import environ
 import os
 
 from pathlib import Path
+import logging
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -32,6 +33,25 @@ CLOUDINARY_CLOUD_NAME = env('CLOUDINARY_CLOUD_NAME', default='')
 CLOUDINARY_API_KEY = env('CLOUDINARY_API_KEY', default='')
 CLOUDINARY_API_SECRET = env('CLOUDINARY_API_SECRET', default='')
 
+
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
+
+# Cloudinaryのキーが設定されているか確認
+logger.warning(f"Cloudinary Name: {CLOUDINARY_CLOUD_NAME}")
+logger.warning(f"Cloudinary Key: {CLOUDINARY_API_KEY}")
+
+# APIシークレットはセキュリティのため、末尾の5文字だけを表示
+if len(CLOUDINARY_API_SECRET) > 5:
+    logger.warning(f"Cloudinary Secret Check (last 5 chars): ...{CLOUDINARY_API_SECRET[-5:]}")
+else:
+    logger.warning(f"Cloudinary Secret Check (full): {CLOUDINARY_API_SECRET}")
+
+
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -44,6 +64,11 @@ INSTALLED_APPS = [
     'cloudinary_storage',
     'cloudinary',
     'product',
+    'widget_tweaks', # フォームの調整
+    'django_cleanup.apps.CleanupConfig', # 関連オブジェクト削除時のファイル削除
+    'product', # アプリケーション
+    'cart', # アプリケーション
+    'order', # アプリケーション
 ]
 
 MIDDLEWARE = [
