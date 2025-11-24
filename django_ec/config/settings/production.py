@@ -1,6 +1,7 @@
 from .base import *
 import dj_database_url
 import os
+import logging
 
 DEBUG = False
 
@@ -24,4 +25,20 @@ CLOUDINARY_STORAGE = {
     'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
     'API_KEY': CLOUDINARY_API_KEY,
     'API_SECRET': CLOUDINARY_API_SECRET
+}
+
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'ERROR',
+    },
 }
