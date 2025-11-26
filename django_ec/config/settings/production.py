@@ -3,6 +3,7 @@ import dj_database_url
 import os
 import logging
 
+
 DEBUG = False
 
 ALLOWED_HOSTS = [os.environ.get('HOST_NAME', 'hc-ec-site.herokuapp.com')]

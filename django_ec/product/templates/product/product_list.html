@@ -9,8 +9,9 @@
     
         <div class="col mb-5">
             <div class="card h-100">
+                {% if product.image %}
                 <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}" />
-    
+                {% endif %}
                 <div class="card-body p-4">
                     <div class="text-center">
                         <h5 class="fw-bolder">{{ product.name }}</h5>
