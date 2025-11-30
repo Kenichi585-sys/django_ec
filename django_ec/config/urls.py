@@ -19,8 +19,13 @@ from django.urls import include, path
 from django.views.generic.base import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import redirect
+
+def root_redirect(request):
+    return redirect('/products/')
 
 urlpatterns = [
+    path('', root_redirect),
     path('admin/', admin.site.urls),
     path('hello/', TemplateView.as_view(template_name='hello.html')),
     path('products/', include('product.urls')),
