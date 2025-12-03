@@ -1,0 +1,20 @@
+from .base import *
+
+DEBUG = True
+
+ALLOWED_HOSTS = ['*']
+
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+DATABASES = {
+    "default": env.db(),
+}
+
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
+    'API_KEY': CLOUDINARY_API_KEY,
+    'API_SECRET': CLOUDINARY_API_SECRET
+}
+
+
