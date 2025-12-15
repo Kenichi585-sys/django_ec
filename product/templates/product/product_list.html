@@ -14,7 +14,7 @@
                 {% endif %}
                 <div class="card-body p-4">
                     <div class="text-center">
-                        <h5 class="fw-bolder">{{ product.name }}</h5>
+                        <h5 class="fw-bolder">{{ product.name|default:"" }}</h5>
                         ¥{{ product.price|floatformat:0 }}
                     </div>
                 </div>

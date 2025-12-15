@@ -1,0 +1,12 @@
+<form method="post" action="">{% csrf_token %}
+    <div>
+        {% if product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+        {% endif %}
+    </div>
+    <div>
+        <h5>{{ product.name|default:"" }}を削除しますか？</h5>
+        <button type="submit">削除する</button>
+        <a href="{% url 'product:product_list' %}">キャンセル</a>
+    </div>
+</form>
