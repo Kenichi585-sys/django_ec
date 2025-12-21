@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>商品管理一覧</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+            integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    </head>
+        
+    <body>
+    <h2 class="p-3 mb-2 bg-black text-info bg-opacity-50">商品管理一覧</h2>
+        
+    <p><a href="{% url 'product:product_create' %}" class="btn btn-primary btn-lg mt-3 mb-3">新規商品を作成</a></p>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>商品名</th>
+                <th>価格</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in manage_list %}
+            <tr>
+                <td>{{ product.pk }}</td>
+                <td>{{ product.name }}</td>
+                <td>{{ product.price|floatformat:0 }}</td>
+                <td>
+                    <a href="{% url 'product:product_update' pk=product.pk %}" class="btn btn-success">編集</a>
+                    |
+                    <a href="{% url 'product:product_delete' pk=product.pk %}" class="btn btn-danger">削除</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">登録されている商品はありません。</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
+    </body>
+</html>
