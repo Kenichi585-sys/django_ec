@@ -28,11 +28,13 @@
     
                 <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
                     <div class="text-center">
-                        <a class="btn btn-outline-dark mt-auto" href="{% url 'product:product_detail' product.pk %}">
-                            詳細を見る
-                        </a>
+                        <form method="post" action="{% url 'product:add_to_cart' %}">{% csrf_token %}
+                            <input type="hidden" name="product_id" value="{{ product.pk }}">
+                            <button type="submit" class="btn btn-outline-dark mt-auto">
+                                カートに追加
+                            </button>
+                        </form>
                     </div>
-                    
                 </div>
             </div>
         </div>
