@@ -4,6 +4,11 @@
 {% block title %}商品一覧{% endblock %}
 
 {% block content %}
+    <div class="d-flex justify-content-end mb-4">
+        <a class="btn btn-dark" href="{% url 'product:manage_list' %}">
+            商品管理画面を見る
+        </a>
+    </div>
     <div class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center">
         {% for product in object_list %}
     
@@ -11,10 +16,12 @@
             <div class="card h-100">
                 {% if product.image %}
                 <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}" />
+                {% else %}
+                <img class="card-img-top" src="{% static 'product/images/no_image.jpg' %}" alt="NO IMAGE">
                 {% endif %}
                 <div class="card-body p-4">
                     <div class="text-center">
-                        <h5 class="fw-bolder">{{ product.name }}</h5>
+                        <h5 class="fw-bolder">{{ product.name|default:"" }}</h5>
                         ¥{{ product.price|floatformat:0 }}
                     </div>
                 </div>
@@ -25,6 +32,7 @@
                             詳細を見る
                         </a>
                     </div>
+                    
                 </div>
             </div>
         </div>
@@ -33,4 +41,5 @@
         {% endfor %}
     </div>
     {% endblock content %}
-
+    
+    
