@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path
 from .views import (ProductListView, ProductDetailView, ProductCreateView, 
                     ProductUpdateView, ProductDeleteView, ProductManageListView, 
-                    CartView, CartAddView)
+                    CartView, CartAddView, CartDeleteView)
 
 
 app_name = 'product'
@@ -14,5 +14,6 @@ urlpatterns = [
     path('manage/products/<int:pk>/edit/', ProductUpdateView.as_view(), name='product_update'),
     path('manage/products/<int:pk>/delete/', ProductDeleteView.as_view(), name='product_delete'),
     path('cart/', CartView.as_view(), name='cart_detail'),
-    path('cart/add/', CartAddView.as_view(), name='add_to_cart'),
+    path('cart/add/<int:pk>/', CartAddView.as_view(), name='add_to_cart'),
+    path('cart/delete/<int:pk>/', CartDeleteView.as_view(), name='delete_from_cart'),
 ]

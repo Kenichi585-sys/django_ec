@@ -4,6 +4,8 @@ from django.utils.decorators import method_decorator
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from .models import Product
+from django.views import View
+from django.shortcuts import redirect
 
 def basic_auth_required(func):
     def wrapper(request, *args, **kwargs):
@@ -39,6 +41,35 @@ class ProductDetailView(DetailView):
         related_products = Product.objects.all().order_by('-pk')[:4]
         context['related_products'] = related_products
         return context
+    
+
+class CartView(ListView):
+    model = Product
+    template_name = 'product/cart.html'
+
+    def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            cart_ids = self.request.session.get('cart', [])
+            cart_products =  Product.objects.filter(pk__in=cart_ids)
+            context['cart_products'] = cart_products
+            
+            total_price = sum([p.price for p in cart_products])
+            context['total_price'] = total_price
+    
+            return context
+    
+
+class CartAddView(View):
+    def post(self, request, pk):
+        cart = request.session.get('cart', [])
+        
+        if pk not in cart:
+            cart.append(pk)
+        
+        request.session['cart'] = cart
+
+        return redirect('product:product_list')
+
 
 @method_decorator(basic_auth_required, name='dispatch')
 class ProductCreateView(CreateView):
@@ -70,3 +101,12 @@ class ProductManageListView(ListView):
     context_object_name = 'manage_list'
 
 
+class CartDeleteView(View):
+    def post(self, request, pk):
+        cart = request.session.get('cart', [])
+
+        if pk in cart:
+            cart.remove(pk)
+
+        request.session['cart'] = cart
+        return redirect('product:cart_detail')

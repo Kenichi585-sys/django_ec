@@ -28,7 +28,7 @@
     
                 <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
                     <div class="text-center">
-                        <form method="post" action="{% url 'product:add_to_cart' %}">{% csrf_token %}
+                        <form method="post" action="{% url 'product:add_to_cart' product.pk %}">{% csrf_token %}
                             <input type="hidden" name="product_id" value="{{ product.pk }}">
                             <button type="submit" class="btn btn-outline-dark mt-auto">
                                 カートに追加
