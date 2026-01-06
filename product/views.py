@@ -6,6 +6,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from .models import Product
 from django.views import View
 from django.shortcuts import redirect
+from django.contrib import messages
 
 def basic_auth_required(func):
     def wrapper(request, *args, **kwargs):
@@ -61,13 +62,18 @@ class CartView(ListView):
 
 class CartAddView(View):
     def post(self, request, pk):
-        cart = request.session.get('cart', [])
-        
-        if pk not in cart:
-            cart.append(pk)
-        
-        request.session['cart'] = cart
+        cart = request.session.get('cart', {})
+        pk = str(pk)
+        product = Product.objects.get(pk=pk)
 
+        if pk in cart:
+            cart[pk] += 1
+            messages.success(request, f'{product.name}をカートに追加しました。{product.name}は現在カートに{cart[pk]}個入っています。')
+        else:
+            cart[pk] = 1
+            messages.success(request, f'{product.name}をカートに追加しました。')
+
+        request.session['cart'] = cart
         return redirect('product:product_list')
 
 
