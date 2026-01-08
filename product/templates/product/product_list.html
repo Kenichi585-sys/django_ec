@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}商品一覧{% endblock %}
 
@@ -14,15 +15,21 @@
     
         <div class="col mb-5">
             <div class="card h-100">
-                {% if product.image %}
-                <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}" />
-                {% else %}
-                <img class="card-img-top" src="{% static 'product/images/no_image.jpg' %}" alt="NO IMAGE">
-                {% endif %}
+                <a href="{% url 'product:product_detail' product.pk %}">
+                    {% if product.image %}
+                    <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}" />
+                    {% else %}
+                    <img class="card-img-top" src="{% static 'product/images/no_image.jpg' %}" alt="NO IMAGE">
+                    {% endif %}
+                </a>
                 <div class="card-body p-4">
                     <div class="text-center">
-                        <h5 class="fw-bolder">{{ product.name|default:"" }}</h5>
-                        ¥{{ product.price|floatformat:0 }}
+                        <h5 class="fw-bolder">
+                            <a href="{% url 'product:product_detail' product.pk %}" style="color: inherit;">
+                                {{ product.name|default:"" }}
+                            </a>
+                        </h5>
+                        ¥{{ product.price|floatformat:0|intcomma }}
                     </div>
                 </div>
     

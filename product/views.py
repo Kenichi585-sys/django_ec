@@ -50,13 +50,24 @@ class CartView(ListView):
 
     def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
-            cart_ids = self.request.session.get('cart', [])
+            cart_ids = self.request.session.get('cart', {})
             cart_products =  Product.objects.filter(pk__in=cart_ids)
-            context['cart_products'] = cart_products
             
-            total_price = sum([p.price for p in cart_products])
-            context['total_price'] = total_price
-    
+            cart_items = []
+            for p in cart_products:
+                quantity = cart_ids[ str(p.pk) ]
+                subtotal = p.price * quantity
+                item = {
+                    'product': p,
+                    'quantity': quantity,
+                    'subtotal': subtotal,
+                }
+                cart_items.append(item)
+
+            context['cart_items'] = cart_items
+
+            context['total_price'] = sum([item['subtotal'] for item in cart_items])
+
             return context
     
 
@@ -66,14 +77,25 @@ class CartAddView(View):
         pk = str(pk)
         product = Product.objects.get(pk=pk)
 
+        quantity = int(request.POST.get('quantity', 1))
+
         if pk in cart:
-            cart[pk] += 1
-            messages.success(request, f'{product.name}をカートに追加しました。{product.name}は現在カートに{cart[pk]}個入っています。')
+            cart[pk] += quantity
         else:
-            cart[pk] = 1
-            messages.success(request, f'{product.name}をカートに追加しました。')
+            cart[pk] = quantity
+            
+        messages.success(request, f'{product.name}をカートに追加しました。{product.name}は現在カートに{cart[pk]}個入っています。')
 
         request.session['cart'] = cart
+
+        next_page = request.POST.get('next')
+
+        if next_page == 'product_detail':
+            return redirect('product:product_detail', pk=pk)
+
+        elif next_page:
+            return redirect('product:' + next_page)
+        
         return redirect('product:product_list')
 
 
@@ -109,10 +131,27 @@ class ProductManageListView(ListView):
 
 class CartDeleteView(View):
     def post(self, request, pk):
-        cart = request.session.get('cart', [])
+        cart = request.session.get('cart', {})
+        pk = str(pk)
 
         if pk in cart:
-            cart.remove(pk)
+            cart.pop(pk, None)
 
         request.session['cart'] = cart
+        return redirect('product:cart_detail')
+
+
+class CartDecreaseView(View):
+    def post(self, request, pk):
+        cart = request.session.get('cart', {})
+        pk = str(pk)
+
+        if pk in cart:
+            if cart[pk] > 1:
+                cart[pk] -= 1
+            else:
+                cart.pop(pk, None)
+
+        request.session['cart'] = cart
+
         return redirect('product:cart_detail')

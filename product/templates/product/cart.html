@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}購入手続き{% endblock %}
 
@@ -10,16 +11,42 @@
         <div class="col-md-5 col-lg-4 order-md-last">
             <h4 class="d-flex justify-content-between align-items-center mb-3">
                 <span class="text-primary">カートの中身</span>
-                <span class="badge bg-primary rounded-pill">{{ cart_products|length }}</span>
+                <span class="badge bg-primary rounded-pill">{{ cart_count }}</span>
             </h4>
 
             <ul class="list-group mb-3">
-                {% if cart_products %}
-                {% for product in cart_products %}
-                <li class="list-group-item d-flex justify-content-between lh-sm">
-                    <div>
-                        <h6 class="my-0">{{ product.name }}</h6>
-                        <form method="post" action="{% url 'product:delete_from_cart' product.pk %}" class="mt-1">
+                {% if cart_items %}
+                {% for item in cart_items %}
+                <li class="list-group-item d-flex justify-content-between align-items-center lh-sm">
+                    <div style="flex-grow: 1; margin-right: 10px;">
+                        <h6 class="my-0">{{ item.product.name }}</h6>
+                
+                        <small class="text-muted d-block mb-2">
+                            単価: ¥{{ item.product.price|floatformat:0|intcomma }}
+                        </small>
+                
+                        <div class="d-flex align-items-center mb-2">
+                            <form method="post" action="{% url 'product:decrease_cart' item.product.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-secondary btn-sm"
+                                    style="width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                                    -
+                                </button>
+                            </form>
+                
+                            <span class="mx-2 fw-bold">{{ item.quantity }}</span>
+                
+                            <form method="post" action="{% url 'product:add_to_cart' item.product.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="cart_detail">
+                                <button type="submit" class="btn btn-outline-secondary btn-sm"
+                                    style="width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                                    +
+                                </button>
+                            </form>
+                        </div>
+                
+                        <form method="post" action="{% url 'product:delete_from_cart' item.product.pk %}">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-link btn-sm text-danger p-0"
                                 style="text-decoration: none; font-size: 0.8rem;">
@@ -27,7 +54,8 @@
                             </button>
                         </form>
                     </div>
-                    <span class="text-muted">¥{{ product.price|floatformat:0 }}</span>
+                
+                    <span class="fw-bold flex-shrink-0">¥{{ item.subtotal|floatformat:0|intcomma }}</span>
                 </li>
                 {% endfor %}
                 {% else %}
@@ -38,7 +66,7 @@
 
                 <li class="list-group-item d-flex justify-content-between">
                     <span>合計金額</span>
-                    <strong>¥{{ total_price|floatformat:0 }}</strong>
+                    <strong>¥{{ total_price|floatformat:0|intcomma }}</strong>
                 </li>
             </ul>
 
