@@ -1,13 +1,41 @@
 import base64
+from typing import Tuple, Optional
+
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from .models import Product, Cart, CartItem
 from django.views import View
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.utils.safestring import mark_safe
+from django.db.models import F
+
+from .models import Product, Cart, CartItem
+
+
+def get_cart_from_request(request, create_if_missing: bool = False) -> Tuple[Optional[Cart], bool]:
+    """
+    セッション上の cart_id から Cart を取得する補助関数。
+    - create_if_missing=True の場合、見つからなければ新規作成して返す
+    - 戻り値は (cart, is_not_found)
+      - cart: Cart または None（create_if_missing=False で見つからないとき）
+      - is_not_found: 取得できなかった（新規作成した/Noneだった）かどうかのフラグ
+    """
+    cart_id = request.session.get('cart_id')
+    cart = None
+
+    if cart_id:
+        cart = Cart.objects.filter(pk=cart_id).first()
+
+    if cart is None:
+        if create_if_missing:
+            cart = Cart.objects.create()
+            request.session['cart_id'] = cart.pk
+        return cart, True  # 取得できなかった
+
+    # 正常取得できた場合
+    return cart, False
 
 
 def basic_auth_required(func):
@@ -29,7 +57,6 @@ def basic_auth_required(func):
     return wrapper
     
 
-
 class ProductListView(ListView):
     model = Product
     template_name = 'product/product_list.html'
@@ -48,60 +75,81 @@ class ProductDetailView(DetailView):
 
 class CartView(View):
     def get(self, request):
-        cart_id = request.session.get('cart_id')
+        cart, is_not_found = get_cart_from_request(request, create_if_missing=False)
+        
+        cart_items = []
         total_price = 0
         cart_count = 0
-
-        if cart_id:
-            try:
-                cart = Cart.objects.get(pk=cart_id)
-                cart_items = CartItem.objects.filter(cart=cart).select_related('product')
-
-            except Cart.DoesNotExist:
-                cart_items = []
+        
+        if is_not_found:
+            if request.session.get('cart_id'):
                 messages.warning(request, "長期間操作がなかったため、カートの情報が更新されました。")
         else:
-            cart_items = []
-        
-        return render(request, 'product/cart.html', {'cart_items': cart_items, 'total_price': total_price, 'cart_count': cart_count})
+            cart_items = cart.cart_items.select_related('product').all()
+            total_price = sum(item.subtotal for item in cart_items)
+            cart_count = sum(item.quantity for item in cart_items)
+
+        return render(request, 'product/cart.html', {
+            'cart_items': cart_items, 
+            'total_price': total_price, 
+            'cart_count': cart_count
+        })
     
-    
+
 class CartAddView(View):
     def post(self, request, pk):
-        pk = str(pk)
         product = Product.objects.get(pk=pk)
         quantity = int(request.POST.get('quantity', 1))
 
-        cart_id = request.session.get('cart_id')
+        cart, _ = get_cart_from_request(request, create_if_missing=True)
 
-        if cart_id:
-            try:
-                cart = Cart.objects.get(pk=cart_id)
-            except Cart.DoesNotExist:
-                cart = Cart.objects.create()
-                request.session['cart_id'] = cart.pk
+        cart_item, created = CartItem.objects.update_or_create(
+            cart=cart,
+            product=product,
+            defaults={'quantity': quantity} if not CartItem.objects.filter(cart=cart, product=product).exists() 
+                        else {'quantity': F('quantity') + quantity}
+        )
         
-        else:
-            cart = Cart.objects.create()
-            request.session['cart_id'] = cart.pk
+        # 4. メッセージを表示
+        messages.success(request, mark_safe(f'{product.name}をカートに追加しました。'))
 
-        existing_item = CartItem.objects.filter(cart=cart, product=product).first()
-                
-        if existing_item:
-            existing_item.quantity += quantity
-            existing_item.save()
-        else:
-            existing_item = CartItem.objects.create(cart=cart, product=product, quantity=quantity)
-            
-        messages.success(request, mark_safe(f'{product.name}をカートに追加しました。<br>カートの中の{product.name}の数量：{existing_item.quantity}点'))
-
+        # 5. リダイレクト（ここは以前のまま）
         next_page = request.POST.get('next')
         if next_page == 'product_detail':
             return redirect('product:product_detail', pk=pk)
-        elif next_page:
-            return redirect('product:' + next_page)
+        return redirect('product:cart_detail' if next_page else 'product:product_list')
+
+
+class CartDeleteView(View):
+    def post(self, request, pk):
+        cart, is_not_found = get_cart_from_request(request)
         
-        return redirect('product:product_list')
+        if is_not_found:
+            return redirect('product:cart_detail')
+
+        product = Product.objects.get(pk=pk)
+        cart.cart_items.filter(product_id=pk).delete()
+
+        messages.info(request, f'{product.name}をカートから削除しました')
+        return redirect('product:cart_detail')
+
+
+class CartDecreaseView(View):
+    def post(self, request, pk):
+        cart, is_not_found = get_cart_from_request(request)
+        if is_not_found:
+            return redirect('product:cart_detail')
+
+        cart_item = cart.cart_items.filter(product_id=pk).first()
+        
+        if cart_item:
+            cart_item.quantity -= 1
+            if cart_item.quantity <= 0:
+                cart_item.delete()
+            else:
+                cart_item.save()
+
+        return redirect('product:cart_detail')
 
 
 @method_decorator(basic_auth_required, name='dispatch')
@@ -133,46 +181,4 @@ class ProductManageListView(ListView):
     template_name = 'product/product_manage_list.html'
     context_object_name = 'manage_list'
 
-
-class CartDeleteView(View):
-    def post(self, request, pk):
-        cart_id = request.session.get('cart_id')
-        if not cart_id:
-            return redirect('product:cart_detail')
-
-        try:
-            cart = Cart.objects.get(pk=cart_id)
-        except Cart.DoesNotExist:
-            return redirect('product:cart_detail')
-
-        pk = str(pk)
-        product = Product.objects.get(pk=pk)
-        CartItem.objects.filter(cart=cart, product=pk).delete()
-        messages.info(request, f'{product.name}をカートから削除しました')
-        return redirect('product:cart_detail')
-
-
-class CartDecreaseView(View):
-    def post(self, request, pk):
-        cart_id = request.session.get('cart_id')
-        if not cart_id:
-            return redirect('product:cart_detail')
-
-        try:
-            cart = Cart.objects.get(pk=cart_id)
-            pk = str(pk)
-            cart_item = CartItem.objects.filter(cart=cart, product=pk).first()
-        except Cart.DoesNotExist:
-            return redirect('product:cart_detail')
-        
-        if not cart_item:
-            return redirect('product:cart_detail')
-        
-        cart_item.quantity -= 1
-        if cart_item.quantity <= 0:
-            cart_item.delete()
-        else:
-            cart_item.save()
-
-        return redirect('product:cart_detail')
 
