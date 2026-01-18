@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import Product
+from .models import Product, Order, OrderItem
 
 # Register your models here.
-@admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
-    pass
+admin.site.register(Product)
+admin.site.register(Order)
+admin.site.register(OrderItem)

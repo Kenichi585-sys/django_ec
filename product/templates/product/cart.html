@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}購入手続き{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row g-5">
+
+        <div class="col-md-5 col-lg-4 order-md-last">
+            <h4 class="d-flex justify-content-between align-items-center mb-3">
+                <span class="text-primary">カートの中身</span>
+                <span class="badge bg-primary rounded-pill">{{ cart_count }}</span>
+            </h4>
+
+            <ul class="list-group mb-3">
+                {% if cart_items %}
+                {% for item in cart_items %}
+                <li class="list-group-item d-flex justify-content-between align-items-center lh-sm">
+                    <div style="flex-grow: 1; margin-right: 10px;">
+                        <h6 class="my-0">{{ item.product.name }}</h6>
+                
+                        <small class="text-muted d-block mb-2">
+                            単価: ¥{{ item.product.price|floatformat:0|intcomma }}
+                        </small>
+                
+                        <div class="d-flex align-items-center mb-2">
+                            <form method="post" action="{% url 'product:decrease_cart' item.product.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-secondary btn-sm"
+                                    style="width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                                    -
+                                </button>
+                            </form>
+                
+                            <span class="mx-2 fw-bold">{{ item.quantity }}</span>
+                
+                            <form method="post" action="{% url 'product:add_to_cart' item.product.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="cart_detail">
+                                <button type="submit" class="btn btn-outline-secondary btn-sm"
+                                    style="width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                                    +
+                                </button>
+                            </form>
+                        </div>
+                
+                        <form method="post" action="{% url 'product:delete_from_cart' item.product.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link btn-sm text-danger p-0"
+                                style="text-decoration: none; font-size: 0.8rem;">
+                                削除
+                            </button>
+                        </form>
+                    </div>
+                
+                    <span class="fw-bold flex-shrink-0">¥{{ item.subtotal|floatformat:0|intcomma }}</span>
+                </li>
+                {% endfor %}
+                {% else %}
+                <li class="list-group-item">
+                    <span class="text-muted">カートは空です</span>
+                </li>
+                {% endif %}
+
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>合計金額</span>
+                    <strong>¥{{ total_price|floatformat:0|intcomma }}</strong>
+                </li>
+            </ul>
+
+            <form class="card p-2">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="クーポンコード">
+                    <button type="submit" class="btn btn-secondary">適用</button>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-7 col-lg-8">
+            <h4 class="mb-3">請求先住所</h4>
+            <form class="needs-validation" novalidate>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label for="lastName" class="form-label">姓</label>
+                        <input type="text" class="form-control" id="lastName" placeholder="" value="" required>
+                        <div class="invalid-feedback">
+                            姓を入力してください。
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <label for="firstName" class="form-label">名</label>
+                        <input type="text" class="form-control" id="firstName" placeholder="" value="" required>
+                        <div class="invalid-feedback">
+                            名を入力してください。
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="username" class="form-label">ユーザー名</label>
+                        <div class="input-group has-validation">
+                            <span class="input-group-text">@</span>
+                            <input type="text" class="form-control" id="username" placeholder="Username" required>
+                            <div class="invalid-feedback">
+                                ユーザー名は必須です。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="email" class="form-label">メールアドレス <span class="text-muted">(任意)</span></label>
+                        <input type="email" class="form-control" id="email" placeholder="you@example.com">
+                        <div class="invalid-feedback">
+                            正しいメールアドレスを入力してください。
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="address" class="form-label">住所</label>
+                        <input type="text" class="form-control" id="address" placeholder="東京都..." required>
+                        <div class="invalid-feedback">
+                            住所を入力してください。
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <h4 class="mb-3">お支払い</h4>
+
+                <div class="my-3">
+                    <div class="form-check">
+                        <input id="credit" name="paymentMethod" type="radio" class="form-check-input" checked required>
+                        <label class="form-check-label" for="credit">クレジットカード</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="debit" name="paymentMethod" type="radio" class="form-check-input" required>
+                        <label class="form-check-label" for="debit">デビットカード</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="bank" name="paymentMethod" type="radio" class="form-check-input" required>
+                        <label class="form-check-label" for="bank">銀行振込</label>
+                    </div>
+                </div>
+
+                <div class="row gy-3">
+                    <div class="col-md-6">
+                        <label for="cc-name" class="form-label">カード名義</label>
+                        <input type="text" class="form-control" id="cc-name" placeholder="" required>
+                        <small class="text-muted">カードに記載されているフルネーム</small>
+                        <div class="invalid-feedback">
+                            カード名義は必須です。
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="cc-number" class="form-label">クレジットカード番号</label>
+                        <input type="text" class="form-control" id="cc-number" placeholder="" required>
+                        <div class="invalid-feedback">
+                            カード番号は必須です。
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <button class="w-100 btn btn-primary btn-lg" type="button">注文を確定する</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
