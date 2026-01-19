@@ -110,10 +110,8 @@ class CartAddView(View):
                         else {'quantity': F('quantity') + quantity}
         )
         
-        # 4. メッセージを表示
         messages.success(request, mark_safe(f'{product.name}をカートに追加しました。'))
 
-        # 5. リダイレクト（ここは以前のまま）
         next_page = request.POST.get('next')
         if next_page == 'product_detail':
             return redirect('product:product_detail', pk=pk)
