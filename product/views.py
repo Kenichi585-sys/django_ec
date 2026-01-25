@@ -1,17 +1,22 @@
 import base64
+import stripe
 from typing import Tuple, Optional
 
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.views import View
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.utils.safestring import mark_safe
 from django.db.models import F
+from django.conf import settings
 
-from .models import Product, Cart, CartItem
+from .models import Product, Cart, CartItem, Order, OrderItem
+from .forms import OrderForm
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 def get_cart_from_request(request, create_if_missing: bool = False) -> Tuple[Optional[Cart], bool]:
@@ -32,9 +37,8 @@ def get_cart_from_request(request, create_if_missing: bool = False) -> Tuple[Opt
         if create_if_missing:
             cart = Cart.objects.create()
             request.session['cart_id'] = cart.pk
-        return cart, True  # 取得できなかった
+        return cart, True
 
-    # 正常取得できた場合
     return cart, False
 
 
@@ -89,10 +93,12 @@ class CartView(View):
             total_price = sum(item.subtotal for item in cart_items)
             cart_count = sum(item.quantity for item in cart_items)
 
+        form = OrderForm()
         return render(request, 'product/cart.html', {
             'cart_items': cart_items, 
             'total_price': total_price, 
-            'cart_count': cart_count
+            'cart_count': cart_count,
+            'form': form
         })
     
 
@@ -178,5 +184,68 @@ class ProductManageListView(ListView):
     model = Product
     template_name = 'product/product_manage_list.html'
     context_object_name = 'manage_list'
+
+
+def order_create(request):
+    cart, is_not_found = get_cart_from_request(request)
+
+    if request.method == 'GET':
+        if not cart or not cart.cart_items.exists():
+            return redirect('product:product_list')
+        form = OrderForm()
+        return render(request, 'product/cart.html', {'form': form})
+
+    if request.method == 'POST':
+        if not cart or not cart.cart_items.exists():
+            messages.error(request, "カートが空です。")
+            return redirect('product:product_list')
+        
+        form = OrderForm(request.POST)
+
+        if form.is_valid():
+            order = form.save(commit=False)
+            order.card_name = request.POST.get('card_name', '')
+            order.card_number = request.POST.get('card_number', '')
+
+            order.total_price = cart.get_total_price()
+            order.status = 'paid'         
+            order.save()
+
+            request.session['pending_order_id'] = order.id
+            
+            for item in cart.cart_items.all():
+                OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    product_name=item.product.name,
+                    product_price=item.product.price,
+                    quantity=item.quantity
+                )
+
+            return redirect('product: order_success')
+        
+        return render(request, 'product/cart.html', {'form': form})
+
+class OrderSuccessView(View):
+    def get(self, request):
+        cart, _ = get_cart_from_request(request)
+        if cart:
+            cart.cart_items.all().delete()
+
+        order_id = request.session.get('pending_order_id')
+        if order_id:
+            order = Order.objects.filter(id=order_id).first()
+            if order:
+                order.status = 'paid'
+                order.save()
+
+                del request.session['pending_order_id']
+        
+        return render(request, 'product/order_success.html')
+
+class OrderCancelView(View):
+    def get(self, request):
+        return render(request, 'product/order_cancel.html')
+
 
 
