@@ -204,14 +204,9 @@ def order_create(request):
 
         if form.is_valid():
             order = form.save(commit=False)
-            order.card_name = request.POST.get('card_name', '')
-            order.card_number = request.POST.get('card_number', '')
-
             order.total_price = cart.get_total_price()
             order.status = 'paid'         
             order.save()
-
-            request.session['pending_order_id'] = order.id
             
             for item in cart.cart_items.all():
                 OrderItem.objects.create(
@@ -221,31 +216,21 @@ def order_create(request):
                     product_price=item.product.price,
                     quantity=item.quantity
                 )
-
-            return redirect('product: order_success')
-        
-        return render(request, 'product/cart.html', {'form': form})
-
-class OrderSuccessView(View):
-    def get(self, request):
-        cart, _ = get_cart_from_request(request)
-        if cart:
+            
             cart.cart_items.all().delete()
 
-        order_id = request.session.get('pending_order_id')
-        if order_id:
-            order = Order.objects.filter(id=order_id).first()
-            if order:
-                order.status = 'paid'
-                order.save()
-
-                del request.session['pending_order_id']
+            messages.success(request, "ご購入ありがとうございます。")
+            return redirect('product:product_list')
         
-        return render(request, 'product/order_success.html')
+        messages.error(request, "入力内容に不備があります。")
+        return render(request, 'product/cart.html', {
+            'form': form,
+            'cart_items': cart.cart_items.all(),
+            'total_price': cart.get_total_price(),
+        })
+    form =OrderForm()
+    return render(request, 'product/cart.html', {'form': form})
 
-class OrderCancelView(View):
-    def get(self, request):
-        return render(request, 'product/order_cancel.html')
 
 
 
