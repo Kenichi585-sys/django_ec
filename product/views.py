@@ -1,5 +1,4 @@
 import base64
-import stripe
 from typing import Tuple, Optional
 
 from django.http import HttpResponse
@@ -12,11 +11,10 @@ from django.contrib import messages
 from django.utils.safestring import mark_safe
 from django.db.models import F
 from django.conf import settings
+from django.core.mail import send_mail
 
 from .models import Product, Cart, CartItem, Order, OrderItem
 from .forms import OrderForm
-
-stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 def get_cart_from_request(request, create_if_missing: bool = False) -> Tuple[Optional[Cart], bool]:
@@ -186,6 +184,14 @@ class ProductManageListView(ListView):
     context_object_name = 'manage_list'
 
 
+@method_decorator(basic_auth_required, name='dispatch')
+class OrderListView(ListView):
+    model = Order
+    template_name = 'product/order_list.html'
+    context_object_name = 'orders'
+    ordering = ['-created_at']
+
+
 def order_create(request):
     cart, is_not_found = get_cart_from_request(request)
 
@@ -207,6 +213,16 @@ def order_create(request):
             order.total_price = cart.get_total_price()
             order.status = 'paid'         
             order.save()
+
+            subject = "ご購入ありがとうございます"
+            message = f"{order.last_name} {order.first_name} 様\n\nご購入ありがとうございます。\n合計金額: ¥{order.total_price:,.0f}\n住所: {order.address}\n\nまたのご利用をお待ちしております。"
+            from_email = settings.EMAIL_HOST_USER
+            recipient_list = [order.email]
+
+            try:
+                send_mail(subject, message, from_email, recipient_list)
+            except Exception as e:
+                print(f"メール送信エラー: {e}")
             
             for item in cart.cart_items.all():
                 OrderItem.objects.create(

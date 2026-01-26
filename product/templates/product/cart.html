@@ -101,8 +101,8 @@
                     </div>
                     
                     <div class="col-12">
-                        <label for="email" class="form-label">メールアドレス <span class="text-muted">(任意)</span></label>
-                        <input type="email" name="email" class="form-control" id="email" placeholder="you@example.com">
+                        <label for="email" class="form-label">メールアドレス </label>
+                        <input type="email" name="email" class="form-control" id="email" placeholder="you@example.com" required>
                     </div>
                     
                     <div class="col-12">
@@ -135,7 +135,7 @@
                     <div class="col-md-6">
                         <label for="cc-number" class="form-label">クレジットカード番号</label>
                         <input type="text" name="card_number" class="form-control {% if form.card_number.errors %}is-invalid{% endif %}"
-                            id="cc-number" value="{{ form.card_number.value|default:'' }}" required>
+                            id="cc-number" maxlength="16" value="{{ form.card_number.value|default:'' }}" required>
                         
                         {% if form.card_number.errors %}
                             <div class="text-danger fw-bold small mt-1">

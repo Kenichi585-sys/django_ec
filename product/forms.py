@@ -29,7 +29,9 @@ class OrderForm(forms.ModelForm):
     def clean_card_expiry(self):
         expiry = self.cleaned_data.get('card_expiry')
 
-        if not re.match(r'^\d{2}/\{2}$', expiry):
+        expiry = expiry.strip()
+
+        if not re.match(r'^\d{2}/\d{2}$', expiry):
             raise forms.ValidationError("有効期限は MM/YY の形式で入力してください。")
         
         return expiry
