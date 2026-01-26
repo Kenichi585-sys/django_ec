@@ -12,6 +12,7 @@ from django.utils.safestring import mark_safe
 from django.db.models import F
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db import transaction
 
 from .models import Product, Cart, CartItem, Order, OrderItem
 from .forms import OrderForm
@@ -209,10 +210,27 @@ def order_create(request):
         form = OrderForm(request.POST)
 
         if form.is_valid():
-            order = form.save(commit=False)
-            order.total_price = cart.get_total_price()
-            order.status = 'paid'         
-            order.save()
+            try:
+                with transaction.atomic():
+                    order = form.save(commit=False)
+                    order.total_price = cart.get_total_price()
+                    order.status = 'paid'         
+                    order.save()
+
+                    for item in cart.cart_items.all():
+                        OrderItem.objects.create(
+                            order=order,
+                            product=item.product,
+                            product_name=item.product.name,
+                            product_price=item.product.price,
+                            quantity=item.quantity
+                        )
+                        
+                    cart.cart_items.all().delete()
+
+            except Exception as e:
+                    messages.error(request, "注文処理時にエラーが発生しました。")
+                    return redirect('product:cart_detail')
 
             subject = "ご購入ありがとうございます"
             message = f"{order.last_name} {order.first_name} 様\n\nご購入ありがとうございます。\n合計金額: ¥{order.total_price:,.0f}\n住所: {order.address}\n\nまたのご利用をお待ちしております。"
@@ -224,17 +242,6 @@ def order_create(request):
             except Exception as e:
                 print(f"メール送信エラー: {e}")
             
-            for item in cart.cart_items.all():
-                OrderItem.objects.create(
-                    order=order,
-                    product=item.product,
-                    product_name=item.product.name,
-                    product_price=item.product.price,
-                    quantity=item.quantity
-                )
-            
-            cart.cart_items.all().delete()
-
             messages.success(request, "ご購入ありがとうございます。")
             return redirect('product:product_list')
         
