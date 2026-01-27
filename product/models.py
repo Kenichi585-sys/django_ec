@@ -36,6 +36,10 @@ class Cart(models.Model):
         auto_now_add=True,
     )
 
+    def get_total_price(self):
+        return sum(item.subtotal for item in self.cart_items.all())
+    
+
 
 class CartItem(models.Model):
     cart = models.ForeignKey(
@@ -65,6 +69,9 @@ class Order(models.Model):
     username = models.CharField(max_length=50, verbose_name='ユーザー名')
     email = models.EmailField(blank=True, verbose_name='メールアドレス')
     address = models.CharField(max_length=250, verbose_name='住所')
+    card_name = models.CharField(max_length=100, verbose_name='カード名義', blank=True)
+    card_number = models.CharField(max_length=16, verbose_name='カード番号', blank=True)
+    card_expiry = models.CharField(max_length=5, verbose_name='有効期限', blank=True)
 
     total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='合計金額')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')

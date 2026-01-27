@@ -3,15 +3,19 @@ from typing import Tuple, Optional
 
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.views import View
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.utils.safestring import mark_safe
 from django.db.models import F
+from django.conf import settings
+from django.core.mail import send_mail
+from django.db import transaction
 
-from .models import Product, Cart, CartItem
+from .models import Product, Cart, CartItem, Order, OrderItem
+from .forms import OrderForm
 
 
 def get_cart_from_request(request, create_if_missing: bool = False) -> Tuple[Optional[Cart], bool]:
@@ -32,9 +36,8 @@ def get_cart_from_request(request, create_if_missing: bool = False) -> Tuple[Opt
         if create_if_missing:
             cart = Cart.objects.create()
             request.session['cart_id'] = cart.pk
-        return cart, True  # 取得できなかった
+        return cart, True
 
-    # 正常取得できた場合
     return cart, False
 
 
@@ -89,10 +92,12 @@ class CartView(View):
             total_price = sum(item.subtotal for item in cart_items)
             cart_count = sum(item.quantity for item in cart_items)
 
+        form = OrderForm()
         return render(request, 'product/cart.html', {
             'cart_items': cart_items, 
             'total_price': total_price, 
-            'cart_count': cart_count
+            'cart_count': cart_count,
+            'form': form
         })
     
 
@@ -110,10 +115,8 @@ class CartAddView(View):
                         else {'quantity': F('quantity') + quantity}
         )
         
-        # 4. メッセージを表示
         messages.success(request, mark_safe(f'{product.name}をカートに追加しました。'))
 
-        # 5. リダイレクト（ここは以前のまま）
         next_page = request.POST.get('next')
         if next_page == 'product_detail':
             return redirect('product:product_detail', pk=pk)
@@ -180,5 +183,77 @@ class ProductManageListView(ListView):
     model = Product
     template_name = 'product/product_manage_list.html'
     context_object_name = 'manage_list'
+
+
+@method_decorator(basic_auth_required, name='dispatch')
+class OrderListView(ListView):
+    model = Order
+    template_name = 'product/order_list.html'
+    context_object_name = 'orders'
+    ordering = ['-created_at']
+
+
+def order_create(request):
+    cart, is_not_found = get_cart_from_request(request)
+
+    if request.method == 'GET':
+        if not cart or not cart.cart_items.exists():
+            return redirect('product:product_list')
+        form = OrderForm()
+        return render(request, 'product/cart.html', {'form': form})
+
+    if request.method == 'POST':
+        if not cart or not cart.cart_items.exists():
+            messages.error(request, "カートが空です。")
+            return redirect('product:product_list')
+        
+        form = OrderForm(request.POST)
+
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    order = form.save(commit=False)
+                    order.total_price = cart.get_total_price()
+                    order.status = 'paid'         
+                    order.save()
+
+                    for item in cart.cart_items.all():
+                        OrderItem.objects.create(
+                            order=order,
+                            product=item.product,
+                            product_name=item.product.name,
+                            product_price=item.product.price,
+                            quantity=item.quantity
+                        )
+                        
+                    cart.cart_items.all().delete()
+
+            except Exception as e:
+                    messages.error(request, "注文処理時にエラーが発生しました。")
+                    return redirect('product:cart_detail')
+
+            subject = "ご購入ありがとうございます"
+            message = f"{order.last_name} {order.first_name} 様\n\nご購入ありがとうございます。\n合計金額: ¥{order.total_price:,.0f}\n住所: {order.address}\n\nまたのご利用をお待ちしております。"
+            from_email = settings.EMAIL_HOST_USER
+            recipient_list = [order.email]
+
+            try:
+                send_mail(subject, message, from_email, recipient_list)
+            except Exception as e:
+                print(f"メール送信エラー: {e}")
+            
+            messages.success(request, "ご購入ありがとうございます。")
+            return redirect('product:product_list')
+        
+        messages.error(request, "入力内容に不備があります。")
+        return render(request, 'product/cart.html', {
+            'form': form,
+            'cart_items': cart.cart_items.all(),
+            'total_price': cart.get_total_price(),
+        })
+    form =OrderForm()
+    return render(request, 'product/cart.html', {'form': form})
+
+
 
 
