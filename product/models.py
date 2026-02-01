@@ -100,3 +100,16 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product_name} (注文ID: {self.order.id})"
+
+
+class PromotionCode(models.Model):
+    code = models.CharField(max_length=7, unique=True, verbose_name='プロモーションコード')
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='割引額')
+    is_used = models.BooleanField(default=False, verbose_name='使用済み')
+
+    def __str__(self):
+        return self.code
+
+    class Meta:
+        verbose_name_plural = 'プロモーションコード'
+
