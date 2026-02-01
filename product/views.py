@@ -14,7 +14,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.db import transaction
 
-from .models import Product, Cart, CartItem, Order, OrderItem
+from .models import Product, Cart, CartItem, Order, OrderItem, PromotionCode
 from .forms import OrderForm
 
 
@@ -92,10 +92,24 @@ class CartView(View):
             total_price = sum(item.subtotal for item in cart_items)
             cart_count = sum(item.quantity for item in cart_items)
 
+        applied_code = request.session.get('applied_promo')
+        discount_amount = 0
+
+        if applied_code:
+            try:
+                promo = PromotionCode.objects.get(code=applied_code, is_used=False)
+                discount_amount = promo.discount_amount
+            except:
+                request.session.pop('applied_promo', None)
+
+        discounted_total = max(0, total_price - discount_amount)
+
         form = OrderForm()
         return render(request, 'product/cart.html', {
             'cart_items': cart_items, 
-            'total_price': total_price, 
+            'total_price': total_price,
+            'discount_amount': discount_amount,
+            'discounted_total': discounted_total,
             'cart_count': cart_count,
             'form': form
         })
@@ -210,13 +224,32 @@ def order_create(request):
         form = OrderForm(request.POST)
 
         if form.is_valid():
+            applied_code = request.session.get('applied_promo')
+            discount = 0
+            promo_obj = None
+            
+            if applied_code:
+                try:
+                    promo_obj = PromotionCode.objects.get(code=applied_code, is_used=False)
+                    discount = promo_obj.discount_amount
+                except:
+                    messages.error(request, "適用していたクーポンが無効、または既に使用されています。")
+                    request.session.pop('applied_promo', None)
+                    return redirect('product:cart_detail')
+
             try:
                 with transaction.atomic():
                     order = form.save(commit=False)
-                    order.total_price = cart.get_total_price()
+                    total = cart.get_total_price() - discount
+                    order.total_price = max(0, total)
                     order.status = 'paid'         
                     order.save()
-
+                    
+                    if promo_obj:
+                        promo_obj.is_used = True
+                        promo_obj.save()
+                        request.session.pop('applied_promo', None)
+                            
                     for item in cart.cart_items.all():
                         OrderItem.objects.create(
                             order=order,
@@ -255,5 +288,23 @@ def order_create(request):
     return render(request, 'product/cart.html', {'form': form})
 
 
+def apply_coupon(request):
+    if request.method == 'POST':
+        code_str = request.POST.get('promo_code', '').strip()
+
+        if request.session.get('applied_promo') == code_str:
+            messages.info(request, "そのコードはすでに適用されています。")
+            return redirect('product:cart_detail')
+
+        try:
+            promo = PromotionCode.objects.get(code=code_str, is_used=False)
+            request.session['applied_promo'] = code_str
+            messages.success(request, f"クーポン「{code_str}」を適用しました。")
+
+        except PromotionCode.DoesNotExist:
+            messages.error(request, "無効なコード、または既に使用されています。")
+            request.session.pop('applied_promo', None)
+
+    return redirect('product:cart_detail')
 
 

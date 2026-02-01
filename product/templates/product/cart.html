@@ -65,21 +65,38 @@
                 {% endif %}
 
                 <li class="list-group-item d-flex justify-content-between">
-                    <span>合計金額</span>
-                    <strong>¥{{ total_price|floatformat:0|intcomma }}</strong>
+                    <div>
+                        <h6 class="my-0">合計金額</h6>
+                        {% if discount_amount > 0 %}
+                        <small class="text-danger">割引適用中</small>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="text-end">
+                        {% if discount_amount > 0 %}
+                        <del class="text-muted small">¥{{ total_price|floatformat:0|intcomma }}</del><br>
+                    
+                        <span class="text-danger small">-¥{{ discount_amount|floatformat:0|intcomma }}</span><br>
+                    
+                        <strong class="fs-5">¥{{ discounted_total|floatformat:0|intcomma }}</strong>
+                        {% else %}
+                        <strong class="fs-5">¥{{ total_price|floatformat:0|intcomma }}</strong>
+                        {% endif %}
+                    </div>
                 </li>
             </ul>
-
-            <form class="card p-2">
+            
+            <form class="card p-2" method="POST" action="{% url 'product:apply_coupon' %}">{% csrf_token %}
                 <div class="input-group">
-                    <input type="text" class="form-control" placeholder="クーポンコード">
+                    <input type="text" name="promo_code" class="form-control" placeholder="クーポンコード" value="{{ request.session.applied_promo|default:'' }}">
                     <button type="submit" class="btn btn-secondary">適用</button>
                 </div>
             </form>
+
+            <form method="post" action="{% url 'product:order_create' %}">{% csrf_token %}
         </div>
         <div class="col-md-7 col-lg-8">
             <h4 class="mb-3">請求先住所</h4>
-            <form method="post" action="{% url 'product:order_create' %}">
                 {% csrf_token %}
                 <div class="row g-3">
                     <div class="col-sm-6">
@@ -159,9 +176,8 @@
                     {% endif %}
                     </div>
                 </div>
-
+                
                 <hr class="my-4">
-
                 <button class="w-100 btn btn-primary btn-lg" type="submit">購入する</button>
             </form>
         </div>
