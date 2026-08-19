@@ -16,8 +16,9 @@
                 <img class="card-img-top mb-5 mb-md-0" src="{{ product.image.url }}" alt="{{ product.name }}"
                     style="max-width: 100%; max-height: 400px; object-fit: contain;" />
                 {% else %}
-                <img class="card-img-top mb-5 mb-md-0" src="{% static 'product/images/no_image.jpg' %}" alt="NO IMAGE"
-                    style="max-width: 100%; max-height: 400px; object-fit: contain;">
+                <div class="card-img-top mb-5 mb-md-0 bg-light d-flex align-items-center justify-content-center text-muted border" style="width: 100%; max-height: 400px; aspect-ratio: 1 / 1;">
+                    <span>準備中</span>
+                </div>
                 {% endif %}
             </div>
 
@@ -58,7 +59,9 @@
                     {% if related_product.image %}
                     <img class="card-img-top" src="{{ related_product.image.url }}" alt="{{ related_product.name }}" />
                     {% else %}
-                    <img class="card-img-top" src="{% static 'product/images/no_image.jpg' %}" alt="NO IMAGE">
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center text-muted border-bottom" style="aspect-ratio: 1 / 1;">
+                        <span class="small">準備中</span>
+                    </div>
                     {% endif %}
                     <div class="card-body p-4">
                         <div class="text-center">

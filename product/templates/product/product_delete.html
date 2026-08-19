@@ -16,7 +16,9 @@
                 {% if product.image %}
                 <img class="img-thumbnail" style="max-height: 200px;" src="{{ object.image.url }}" alt="{{ object.name }}">
                 {% else %}
-                <img class="img-thumbnail" style="max-height: 200px;" src="{% static 'product/images/no_image.jpg' %}" alt="NO IMAGE">
+                <div class="img-thumbnail bg-light d-flex align-items-center justify-content-center text-muted" style="width: 200px; height: 200px;">
+                    <span class="small">準備中</span>
+                </div>
                 {% endif %}
             </div>
             <div>
