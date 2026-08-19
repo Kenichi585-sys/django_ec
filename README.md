@@ -19,9 +19,13 @@ Heroku へのデプロイ後、上記 URL を更新予定です。
 
 ## 画面イメージ
 
-| 商品一覧 | カート |
-| -------- | ------ |
-| ![商品一覧](./docs/screenshots/product_list.png) | ![カート](./docs/screenshots/cart.png) |
+### 商品一覧
+
+![商品一覧](./docs/screenshots/product_list.png)
+
+### カート
+
+![カート](./docs/screenshots/cart.png)
 
 ---
 
