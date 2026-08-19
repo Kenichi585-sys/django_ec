@@ -41,6 +41,46 @@ def get_cart_from_request(request, create_if_missing: bool = False) -> Tuple[Opt
     return cart, False
 
 
+def build_cart_page_context(request, cart, form=None):
+    if form is None:
+        form = OrderForm()
+
+    if cart is None:
+        return {
+            'cart_items': [],
+            'total_price': 0,
+            'discount_amount': 0,
+            'discounted_total': 0,
+            'cart_count': 0,
+            'form': form,
+        }
+
+    cart_items = cart.cart_items.select_related('product').all()
+    total_price = sum(item.subtotal for item in cart_items)
+    cart_count = sum(item.quantity for item in cart_items)
+
+    applied_code = request.session.get('applied_promo')
+    discount_amount = 0
+
+    if applied_code:
+        try:
+            promo = PromotionCode.objects.get(code=applied_code, is_used=False)
+            discount_amount = promo.discount_amount
+        except PromotionCode.DoesNotExist:
+            request.session.pop('applied_promo', None)
+
+    discounted_total = max(0, total_price - discount_amount)
+
+    return {
+        'cart_items': cart_items,
+        'total_price': total_price,
+        'discount_amount': discount_amount,
+        'discounted_total': discounted_total,
+        'cart_count': cart_count,
+        'form': form,
+    }
+
+
 def basic_auth_required(func):
     def wrapper(request, *args, **kwargs):
         auth_header = request.META.get('HTTP_AUTHORIZATION')
@@ -79,40 +119,15 @@ class ProductDetailView(DetailView):
 class CartView(View):
     def get(self, request):
         cart, is_not_found = get_cart_from_request(request, create_if_missing=False)
-        
-        cart_items = []
-        total_price = 0
-        cart_count = 0
-        
-        if is_not_found:
-            if request.session.get('cart_id'):
-                messages.warning(request, "長期間操作がなかったため、カートの情報が更新されました。")
-        else:
-            cart_items = cart.cart_items.select_related('product').all()
-            total_price = sum(item.subtotal for item in cart_items)
-            cart_count = sum(item.quantity for item in cart_items)
 
-        applied_code = request.session.get('applied_promo')
-        discount_amount = 0
+        if is_not_found and request.session.get('cart_id'):
+            messages.warning(request, "長期間操作がなかったため、カートの情報が更新されました。")
 
-        if applied_code:
-            try:
-                promo = PromotionCode.objects.get(code=applied_code, is_used=False)
-                discount_amount = promo.discount_amount
-            except:
-                request.session.pop('applied_promo', None)
-
-        discounted_total = max(0, total_price - discount_amount)
-
-        form = OrderForm()
-        return render(request, 'product/cart.html', {
-            'cart_items': cart_items, 
-            'total_price': total_price,
-            'discount_amount': discount_amount,
-            'discounted_total': discounted_total,
-            'cart_count': cart_count,
-            'form': form
-        })
+        context = build_cart_page_context(
+            request,
+            None if is_not_found else cart,
+        )
+        return render(request, 'product/cart.html', context)
     
 
 class CartAddView(View):
@@ -213,8 +228,7 @@ def order_create(request):
     if request.method == 'GET':
         if not cart or not cart.cart_items.exists():
             return redirect('product:product_list')
-        form = OrderForm()
-        return render(request, 'product/cart.html', {'form': form})
+        return render(request, 'product/cart.html', build_cart_page_context(request, cart))
 
     if request.method == 'POST':
         if not cart or not cart.cart_items.exists():
@@ -278,14 +292,9 @@ def order_create(request):
             messages.success(request, "ご購入ありがとうございます。")
             return redirect('product:product_list')
         
-        messages.error(request, "入力内容に不備があります。")
-        return render(request, 'product/cart.html', {
-            'form': form,
-            'cart_items': cart.cart_items.all(),
-            'total_price': cart.get_total_price(),
-        })
-    form =OrderForm()
-    return render(request, 'product/cart.html', {'form': form})
+        messages.error(request, "入力内容に不備があります。各項目のエラーを確認してください。")
+        return render(request, 'product/cart.html', build_cart_page_context(request, cart, form=form))
+    return redirect('product:cart_detail')
 
 
 def apply_coupon(request):

@@ -7,6 +7,20 @@ class OrderForm(forms.ModelForm):
         model = Order
         fields = ['last_name', 'first_name', 'username', 'email', 'address',
                     'card_name', 'card_number', 'card_expiry']
+
+        error_messages = {
+            'last_name': {'required': '姓を入力してください。'},
+            'first_name': {'required': '名を入力してください。'},
+            'username': {'required': 'ユーザー名を入力してください。'},
+            'email': {
+                'required': 'メールアドレスを入力してください。',
+                'invalid': '有効なメールアドレスを入力してください。',
+            },
+            'address': {'required': '住所を入力してください。'},
+            'card_name': {'required': 'カード名義を入力してください。'},
+            'card_number': {'required': 'カード番号を入力してください。'},
+            'card_expiry': {'required': '有効期限を入力してください。'},
+        }
         
         widgets = {
             'last_name': forms.TextInput(attrs={'placeholder': '姓', 'class': 'form-control'}),
