@@ -18,6 +18,41 @@ from .models import Product, Cart, CartItem, Order, OrderItem, PromotionCode
 from .forms import OrderForm
 
 
+def fetch_unused_promotion(code: Optional[str]) -> Optional[PromotionCode]:
+    if not code:
+        return None
+    try:
+        return PromotionCode.objects.get(code=code, is_used=False)
+    except PromotionCode.DoesNotExist:
+        return None
+
+
+def redirect_after_cart_add(request, product_pk):
+    next_page = request.POST.get('next')
+    if next_page == 'product_detail':
+        return redirect('product:product_detail', pk=product_pk)
+    if next_page:
+        return redirect('product:cart_detail')
+    return redirect('product:product_list')
+
+
+def send_order_confirmation_email(order) -> bool:
+    subject = "ご購入ありがとうございます"
+    message = (
+        f"{order.last_name} {order.first_name} 様\n\n"
+        f"ご購入ありがとうございます。\n"
+        f"合計金額: ¥{order.total_price:,.0f}\n"
+        f"住所: {order.address}\n\n"
+        f"またのご利用をお待ちしております。"
+    )
+    try:
+        send_mail(subject, message, settings.EMAIL_HOST_USER, [order.email])
+        return True
+    except Exception as e:
+        print(f"メール送信エラー: {e}")
+        return False
+
+
 def get_cart_from_request(request, create_if_missing: bool = False) -> Tuple[Optional[Cart], bool]:
     """
     セッション上の cart_id から Cart を取得する補助関数。
@@ -60,14 +95,10 @@ def build_cart_page_context(request, cart, form=None):
     cart_count = sum(item.quantity for item in cart_items)
 
     applied_code = request.session.get('applied_promo')
-    discount_amount = 0
-
-    if applied_code:
-        try:
-            promo = PromotionCode.objects.get(code=applied_code, is_used=False)
-            discount_amount = promo.discount_amount
-        except PromotionCode.DoesNotExist:
-            request.session.pop('applied_promo', None)
+    promo = fetch_unused_promotion(applied_code)
+    if applied_code and promo is None:
+        request.session.pop('applied_promo', None)
+    discount_amount = promo.discount_amount if promo else 0
 
     discounted_total = max(0, total_price - discount_amount)
 
@@ -133,6 +164,11 @@ class CartView(View):
 class CartAddView(View):
     def post(self, request, pk):
         product = Product.objects.get(pk=pk)
+
+        if not product.is_available:
+            messages.warning(request, f'{product.name}は現在ご購入いただけません。')
+            return redirect_after_cart_add(request, pk)
+
         quantity = int(request.POST.get('quantity', 1))
 
         cart, _ = get_cart_from_request(request, create_if_missing=True)
@@ -145,11 +181,7 @@ class CartAddView(View):
         )
         
         messages.success(request, mark_safe(f'{product.name}をカートに追加しました。'))
-
-        next_page = request.POST.get('next')
-        if next_page == 'product_detail':
-            return redirect('product:product_detail', pk=pk)
-        return redirect('product:cart_detail' if next_page else 'product:product_list')
+        return redirect_after_cart_add(request, pk)
 
 
 class CartDeleteView(View):
@@ -239,17 +271,13 @@ def order_create(request):
 
         if form.is_valid():
             applied_code = request.session.get('applied_promo')
-            discount = 0
-            promo_obj = None
-            
-            if applied_code:
-                try:
-                    promo_obj = PromotionCode.objects.get(code=applied_code, is_used=False)
-                    discount = promo_obj.discount_amount
-                except:
-                    messages.error(request, "適用していたクーポンが無効、または既に使用されています。")
-                    request.session.pop('applied_promo', None)
-                    return redirect('product:cart_detail')
+            promo_obj = fetch_unused_promotion(applied_code)
+            discount = promo_obj.discount_amount if promo_obj else 0
+
+            if applied_code and promo_obj is None:
+                messages.error(request, "適用していたクーポンが無効、または既に使用されています。")
+                request.session.pop('applied_promo', None)
+                return redirect('product:cart_detail')
 
             try:
                 with transaction.atomic():
@@ -279,16 +307,8 @@ def order_create(request):
                     messages.error(request, "注文処理時にエラーが発生しました。")
                     return redirect('product:cart_detail')
 
-            subject = "ご購入ありがとうございます"
-            message = f"{order.last_name} {order.first_name} 様\n\nご購入ありがとうございます。\n合計金額: ¥{order.total_price:,.0f}\n住所: {order.address}\n\nまたのご利用をお待ちしております。"
-            from_email = settings.EMAIL_HOST_USER
-            recipient_list = [order.email]
+            send_order_confirmation_email(order)
 
-            try:
-                send_mail(subject, message, from_email, recipient_list)
-            except Exception as e:
-                print(f"メール送信エラー: {e}")
-            
             messages.success(request, "ご購入ありがとうございます。")
             return redirect('product:product_list')
         
@@ -305,14 +325,13 @@ def apply_coupon(request):
             messages.info(request, "そのコードはすでに適用されています。")
             return redirect('product:cart_detail')
 
-        try:
-            promo = PromotionCode.objects.get(code=code_str, is_used=False)
-            request.session['applied_promo'] = code_str
-            messages.success(request, f"クーポン「{code_str}」を適用しました。")
-
-        except PromotionCode.DoesNotExist:
+        promo = fetch_unused_promotion(code_str)
+        if promo is None:
             messages.error(request, "無効なコード、または既に使用されています。")
             request.session.pop('applied_promo', None)
+        else:
+            request.session['applied_promo'] = code_str
+            messages.success(request, f"クーポン「{code_str}」を適用しました。")
 
     return redirect('product:cart_detail')
 

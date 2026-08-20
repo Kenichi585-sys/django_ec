@@ -37,12 +37,18 @@
     
                 <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
                     <div class="text-center">
+                        {% if product.is_available %}
                         <form method="post" action="{% url 'product:add_to_cart' product.pk %}">{% csrf_token %}
                             <input type="hidden" name="product_id" value="{{ product.pk }}">
                             <button type="submit" class="btn btn-outline-dark mt-auto">
                                 カートに追加
                             </button>
                         </form>
+                        {% else %}
+                        <button type="button" class="btn btn-secondary mt-auto" disabled>
+                            入荷待ち
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>

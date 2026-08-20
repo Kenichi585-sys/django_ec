@@ -30,6 +30,7 @@
                 <p class="lead">{{ product.description }}</p>
 
                 <div class="d-flex">
+                    {% if product.is_available %}
                     <form method="post" action="{% url 'product:add_to_cart' object.pk %}" class="d-flex">
                         {% csrf_token %}
 
@@ -43,6 +44,11 @@
                             カートに追加
                         </button>
                     </form>
+                    {% else %}
+                    <button type="button" class="btn btn-secondary" disabled>
+                        入荷待ち（現在ご購入いただけません）
+                    </button>
+                    {% endif %}
                 </div>
             </div>
         </div>

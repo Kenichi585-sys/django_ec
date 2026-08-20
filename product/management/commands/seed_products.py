@@ -21,48 +21,56 @@ class Command(BaseCommand):
                 'price': 2800,
                 'description': '港町の日常に合う、丈夫なトート',
                 'image_name': 'tote_bag.png',
+                'is_available': True,
             },
             {
                 'name': '港焙煎コーヒー豆',
                 'price': 1500,
                 'description': '朝の一杯用の中煎りブレンド',
                 'image_name': 'coffee.png',
+                'is_available': True,
             },
             {
                 'name': '海の恵みソルト',
                 'price': 800,
                 'description': '料理の仕上げに使える天然塩',
                 'image_name': 'salt.png',
+                'is_available': True,
             },
             {
                 'name': 'マリンキャップ',
                 'price': 3200,
                 'description': '日よけに使える定番キャップ',
                 'image_name': 'cap.png',
+                'is_available': True,
             },
             {
                 'name': 'オリジナル手ぬぐい',
                 'price': 900,
                 'description': '波と港のモチーフ入り',
                 'image_name': 'tenugui.png',
+                'is_available': True,
             },
             {
                 'name': 'ステンレスボトル',
                 'price': 2400,
                 'description': '保冷・保温対応の500ml',
                 'image_name': 'bottle.png',
+                'is_available': True,
             },
             {
                 'name': '港町クッキー詰め合わせ',
                 'price': 1200,
                 'description': '手土産にも使える6枚入り',
                 'image_name': 'cookies.png',
+                'is_available': True,
             },
             {
                 'name': '限定の陶器マグ（入荷待ち）',
                 'price': 2000,
                 'description': '次回入荷予定',
                 'image_name': None,
+                'is_available': False,
             },
         ]
 
@@ -73,6 +81,7 @@ class Command(BaseCommand):
                 name=data['name'],
                 price=data['price'],
                 description=data['description'],
+                is_available=data.get('is_available', True),
             )
 
             if image_name:

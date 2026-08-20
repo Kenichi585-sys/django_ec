@@ -22,6 +22,10 @@ class Product(models.Model):
         blank=True,
         null=True,
     )
+    is_available = models.BooleanField(
+        verbose_name='購入可能',
+        default=True,
+    )
 
     class Meta:
         verbose_name_plural = '商品'
