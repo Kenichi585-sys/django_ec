@@ -8,12 +8,10 @@ Django で構築した EC サイトのデモアプリケーションです。商
 
 ## デモ
 
-| 項目 | 内容 |
-| ---- | ---- |
-| デモ URL（予定） | `https://hc-ec-site.herokuapp.com/products/` |
-| 管理画面 | `/products/manage/products/`（Basic 認証: `admin` / `pw` ※デモ用） |
-
-Heroku へのデプロイ後、上記 URL を更新予定です。
+| 項目     | 内容                                                                                                          |
+| -------- | ------------------------------------------------------------------------------------------------------------- |
+| 商品一覧 | https://hc-ec-site-ca537aeee08e.herokuapp.com/products/                                                       |
+| 管理画面 | https://hc-ec-site-ca537aeee08e.herokuapp.com/products/manage/products/（Basic 認証: `admin` / `pw` ※デモ用） |
 
 ---
 
@@ -50,13 +48,13 @@ Heroku へのデプロイ後、上記 URL を更新予定です。
 
 ## 技術スタック
 
-| カテゴリ | 技術 |
-| -------- | ---- |
-| 言語 / FW | Python 3.12 / Django 4.2 |
-| DB | PostgreSQL |
-| フロント | Bootstrap 5 |
-| 画像 | Pillow（開発）/ Cloudinary（本番） |
-| インフラ | Docker Compose（開発）/ Heroku, Gunicorn, WhiteNoise（本番） |
+| カテゴリ  | 技術                                                         |
+| --------- | ------------------------------------------------------------ |
+| 言語 / FW | Python 3.12 / Django 4.2                                     |
+| DB        | PostgreSQL                                                   |
+| フロント  | Bootstrap 5                                                  |
+| 画像      | Pillow（開発）/ Cloudinary（本番）                           |
+| インフラ  | Docker Compose（開発）/ Heroku, Gunicorn, WhiteNoise（本番） |
 
 ---
 
@@ -70,22 +68,32 @@ Heroku へのデプロイ後、上記 URL を更新予定です。
 
 ## ローカル環境構築
 
-### 1. `.env` を作成
+### 1. リポジトリをクローン
+
+```bash
+git clone <リポジトリ URL>
+cd django-template
+```
+
+### 2. `.env` を作成
 
 ```env
 DATABASE_URL="postgres://postgres:postgres@db:5432/django_develop"
 SECRET_KEY=<Django SECRET_KEY>
+CLOUDINARY_CLOUD_NAME=<Cloudinary cloud name>
+CLOUDINARY_API_KEY=<Cloudinary API key>
+CLOUDINARY_API_SECRET=<Cloudinary API secret>
 EMAIL_HOST_USER=<Gmail アドレス（任意）>
 EMAIL_HOST_PASSWORD=<Gmail アプリパスワード（任意）>
 ```
 
-### 2. Docker を起動
+### 3. Docker を起動
 
 ```bash
 docker-compose up --build
 ```
 
-### 3. マイグレーション・初期データ
+### 4. マイグレーション・初期データ
 
 ```bash
 docker-compose exec web python manage.py migrate
@@ -93,26 +101,14 @@ docker-compose exec web python manage.py seed_products
 docker-compose exec web python manage.py promotion_code_generate
 ```
 
-### 4. アクセス
+---
 
-- 商品一覧: http://localhost:3000/products/
-- 管理画面: 商品一覧右上の「商品管理画面を見る」から遷移（Basic 認証: `admin` / `pw` ※デモ用）
+## 実行方法（ローカル）
+
+| ページ   | URL                                                                        |
+| -------- | -------------------------------------------------------------------------- |
+| 商品一覧 | http://localhost:3000/products/                                            |
+| 管理画面 | 商品一覧右上の「商品管理画面を見る」（Basic 認証: `admin` / `pw` ※デモ用） |
 
 > **管理画面への導線について**  
 > 商品一覧に管理画面へのボタンを置いています。実際の EC サイトでは、一般ユーザー向けのページから管理画面へリンクすることはありませんが、本プロジェクトではポートフォリオとして管理機能を確認しやすくするため、このボタンを設置しています。
-
----
-
-## ディレクトリ構成
-
-```
-config/          … プロジェクト設定
-product/         … EC 機能（models, views, forms, templates）
-fixtures/        … seed 用の商品画像（元データ）
-docs/            … README 用スクリーンショット
-media/           … 実行時に Django が保存する商品画像
-docker-compose.yml
-Dockerfile
-Procfile         … Heroku 用
-requirements.txt
-```
