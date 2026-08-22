@@ -1,51 +1,106 @@
 from django.conf import settings
-from django.core.management.base import BaseCommand
 from django.core.files import File
-from django.core.files.base import ContentFile
-from pathlib import  Path
+from django.core.management.base import BaseCommand
+
 from product.models import Product
-import os
-import tempfile
+
 
 class Command(BaseCommand):
     help = '商品などの初期データをデータベースに投入します。'
 
     def handle(self, *args, **options):
-        Product.objects.all().delete()
+        fixture_image_dir = settings.BASE_DIR / 'fixtures' / 'product_images'
+        media_image_dir = settings.BASE_DIR / 'media' / 'product_image'
 
-        image_dir = settings.BASE_DIR / 'media' / 'product_image'
+        Product.objects.all().delete()
+        self._clear_media_product_images(media_image_dir)
 
         products_to_create = [
-            {'name': 'Tシャツ', 'price': 1500, 'description': '定番のTシャツ', 'image_name': 'tshirt.png'},
-            {'name': 'デニムパンツ', 'price': 5000, 'description': '定番のストレートデニム。', 'image_name': 'denim.png'},
-            {'name': 'トートバッグ', 'price': 2000, 'description': '大容量トートバッグ', 'image_name': 'tote.png'},
-            {'name': 'カレンダー', 'price': 500, 'description': '2026年のカレンダー', 'image_name': 'calendar.png'},
-            {'name': 'キャップ', 'price': 4000, 'description': '普通のキャップ', 'image_name': 'cap.png'},
-            {'name': '靴', 'price': 10000, 'description': 'NIKEの靴', 'image_name': 'shoes.png'},
-            {'name': 'ティッシュ', 'price': 200, 'description': '普通のティッシュ', 'image_name': 'tissue.jpg'},
-            {'name': '水', 'price': 100, 'description': '天然水', 'image_name': 'mizu.jpg'},
+            {
+                'name': '帆布トートバッグ',
+                'price': 2800,
+                'description': '港町の日常に合う、丈夫なトート',
+                'image_name': 'tote_bag.png',
+                'is_available': True,
+            },
+            {
+                'name': '港焙煎コーヒー豆',
+                'price': 1500,
+                'description': '朝の一杯用の中煎りブレンド',
+                'image_name': 'coffee.png',
+                'is_available': True,
+            },
+            {
+                'name': '海の恵みソルト',
+                'price': 800,
+                'description': '料理の仕上げに使える天然塩',
+                'image_name': 'salt.png',
+                'is_available': True,
+            },
+            {
+                'name': 'マリンキャップ',
+                'price': 3200,
+                'description': '日よけに使える定番キャップ',
+                'image_name': 'cap.png',
+                'is_available': True,
+            },
+            {
+                'name': 'オリジナル手ぬぐい',
+                'price': 900,
+                'description': '波と港のモチーフ入り',
+                'image_name': 'tenugui.png',
+                'is_available': True,
+            },
+            {
+                'name': 'ステンレスボトル',
+                'price': 2400,
+                'description': '保冷・保温対応の500ml',
+                'image_name': 'bottle.png',
+                'is_available': True,
+            },
+            {
+                'name': '港町クッキー詰め合わせ',
+                'price': 1200,
+                'description': '手土産にも使える6枚入り',
+                'image_name': 'cookies.png',
+                'is_available': True,
+            },
+            {
+                'name': '限定の陶器マグ（入荷待ち）',
+                'price': 2000,
+                'description': '次回入荷予定',
+                'image_name': None,
+                'is_available': False,
+            },
         ]
 
         created_count = 0
         for data in products_to_create:
-            file_name = data['image_name']
-            file_path = image_dir / file_name
-
-            if not file_path.exists():
-                self.stdout.write(self.style.WARNING(f"警告：画像ファイルが見つかりません - {file_path}"))
-
+            image_name = data['image_name']
             product = Product(
                 name=data['name'],
                 price=data['price'],
-                description=data['description']
+                description=data['description'],
+                is_available=data.get('is_available', True),
             )
 
-            with file_path.open('rb') as f:
-                django_file = File(f)
+            if image_name:
+                file_path = fixture_image_dir / image_name
+                if file_path.exists():
+                    with file_path.open('rb') as f:
+                        product.image.save(image_name, File(f), save=False)
+                else:
+                    self.stdout.write(
+                        self.style.WARNING(f'警告：画像ファイルが見つかりません - {file_path}')
+                    )
 
-                product.image.save(file_name, django_file)
-
+            product.save()
             created_count += 1
 
         self.stdout.write(self.style.SUCCESS(f'{created_count}件の初期データの投入が完了しました！'))
-    
+
+    def _clear_media_product_images(self, media_image_dir):
+        media_image_dir.mkdir(parents=True, exist_ok=True)
+        for path in media_image_dir.iterdir():
+            if path.is_file():
+                path.unlink()
