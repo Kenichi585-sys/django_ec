@@ -84,6 +84,8 @@
             {% endfor %}
         </div>
     </div>
+    <div class="text-center mt-4">
+        <a href="{% url 'product:product_list' %}" class="btn btn-secondary">一覧に戻る</a>
+    </div>
 </section>
-<a href="{% url 'product:product_list' %}" class="btn btn-secondary mt-3">一覧に戻る</a>
 {% endblock content %}
