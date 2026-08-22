@@ -13,6 +13,23 @@ Django で構築した EC サイトのデモアプリケーションです。商
 | 商品一覧 | https://hc-ec-site-ca537aeee08e.herokuapp.com/products/                                                       |
 | 管理画面 | https://hc-ec-site-ca537aeee08e.herokuapp.com/products/manage/products/（Basic 認証: `admin` / `pw` ※デモ用） |
 
+### デモ用クーポンコード
+
+カート画面で入力して利用できます。各コードは **1 回限り** です。
+
+| コード | 割引額 |
+| ------ | ------ |
+| `qQ0V61a` | ¥600 |
+| `MDxAhfK` | ¥700 |
+| `seAYF8U` | ¥500 |
+| `MGaVu5H` | ¥200 |
+| `ddJw2gZ` | ¥900 |
+| `MgqAdR5` | ¥700 |
+| `fcXwJqC` | ¥800 |
+| `lNAWgkR` | ¥200 |
+| `cpOa4SC` | ¥700 |
+| `DcRekb5` | ¥1000 |
+
 ---
 
 ## 画面イメージ
@@ -71,7 +88,7 @@ Django で構築した EC サイトのデモアプリケーションです。商
 ### 1. リポジトリをクローン
 
 ```bash
-git clone <リポジトリ URL>
+git clone https://github.com/Kenichi585-sys/django_ec.git
 cd django-template
 ```
 
