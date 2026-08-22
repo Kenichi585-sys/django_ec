@@ -91,7 +91,7 @@ Django で構築した EC サイトのデモアプリケーションです。商
 
 ```bash
 git clone https://github.com/Kenichi585-sys/django_ec.git
-cd django-template
+cd django-ec
 ```
 
 ### 2. `.env` を作成
