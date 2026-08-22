@@ -34,13 +34,15 @@ Django で構築した EC サイトのデモアプリケーションです。商
 
 ## 画面イメージ
 
-### 商品一覧
+| 商品詳細 | カート・購入手続き |
+| -------- | ------------------ |
+| ![商品詳細画面](./docs/screenshots/product_detail.png) | ![カート・購入手続き画面](./docs/screenshots/cart.png) |
+| 商品の詳細表示。数量を指定してカートに追加できる。 | カート内容の確認、クーポン適用、請求先・カード情報の入力。 |
 
-![商品一覧](./docs/screenshots/product_list.png)
-
-### カート
-
-![カート](./docs/screenshots/cart.png)
+| 商品一覧（注文完了後） | 商品管理一覧 |
+| ---------------------- | ------------ |
+| ![商品一覧（注文完了後）](./docs/screenshots/product_list.png) | ![商品管理一覧画面](./docs/screenshots/admin_manage_list.png) |
+| 注文完了後の商品一覧。確認メール送信のメッセージを表示。 | 商品の一覧・編集・削除、受注一覧への導線（Basic 認証）。 |
 
 ---
 
