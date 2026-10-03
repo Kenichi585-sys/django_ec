@@ -152,6 +152,7 @@
                         <input id="credit" name="paymentMethod" type="radio" class="form-check-input" checked required>
                         <label class="form-check-label" for="credit">クレジットカード</label>
                     </div>
+                    <small class="text-muted">デモ用の疑似決済です。実在するカード情報は入力しないでください。入力内容は保存されません。</small>
                 </div>
 
                 <div class="row gy-3">
@@ -167,29 +168,29 @@
                     <div class="col-md-6">
                         <label for="cc-number" class="form-label">クレジットカード番号</label>
                         <input type="text" name="card_number" class="form-control {% if form.card_number.errors %}is-invalid{% endif %}"
-                            id="cc-number" maxlength="16" value="{{ form.card_number.value|default:'' }}" required>
-                        
+                            id="cc-number" maxlength="16" inputmode="numeric" required>
+
                         {% if form.card_number.errors %}
                         <div class="text-danger small mt-1">
                             {% for error in form.card_number.errors %}{{ error }}{% endfor %}
                         </div>
                         {% else %}
-                        <small class="text-muted">16桁の数字（ハイフンなし）</small>
+                        <small class="text-muted">動作確認用: 4242424242424242（ハイフンなし）</small>
                         {% endif %}
                     </div>
                     <div class="col-md-3">
                         <label for="cc-expiration" class="form-label">有効期限</label>
-                        <input type="text" name="card_expiry" class="form-control {% if form.card_expiry.errors %}is-invalid{% endif %}" id="cc-expiration" placeholder="MM/YY" value="{{ form.card_expiry.value|default:'' }}" required>
+                        <input type="text" name="card_expiry" class="form-control {% if form.card_expiry.errors %}is-invalid{% endif %}" id="cc-expiration" placeholder="MM/YY" maxlength="5" required>
                         {% if form.card_expiry.errors %}
                         <div class="text-danger small mt-1">
                             {% for error in form.card_expiry.errors %}{{ error }}{% endfor %}
                         </div>
                         {% else %}
-                        <small class="text-muted">例: 12/28</small>
+                        <small class="text-muted">動作確認用: 12/99</small>
                         {% endif %}
                     </div>
                 </div>
-                
+
                 <hr class="my-4">
                 <button class="w-100 btn btn-primary btn-lg" type="submit">購入する</button>
             </form>
@@ -197,5 +198,3 @@
     </div>
 </div>
 {% endblock %}
-
-

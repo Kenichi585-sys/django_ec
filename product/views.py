@@ -290,7 +290,7 @@ def order_create(request):
                     order = form.save(commit=False)
                     total = cart.get_total_price() - discount
                     order.total_price = max(0, total)
-                    order.status = 'paid'         
+                    order.status = 'paid'
                     order.save()
                     
                     if promo_obj:
@@ -344,5 +344,3 @@ def apply_coupon(request):
             messages.success(request, f"クーポン「{code_str}」を適用しました。")
 
     return redirect('product:cart_detail')
-
-
