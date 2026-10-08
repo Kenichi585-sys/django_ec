@@ -122,12 +122,19 @@ def basic_auth_required(func):
         if auth_header:
             try:
                 auth_type, auth_string = auth_header.split(' ', 1)
+                if auth_type.lower() != 'basic':
+                    raise ValueError('Unsupported authorization scheme')
                 auth_decoded = base64.b64decode(auth_string).decode('utf-8')
                 username, password = auth_decoded.split(':', 1)
             except (ValueError, Exception):
                 pass
             else:
-                if username == 'admin' and password == 'pw':
+                if (
+                    settings.BASIC_AUTH_USERNAME
+                    and settings.BASIC_AUTH_PASSWORD
+                    and username == settings.BASIC_AUTH_USERNAME
+                    and password == settings.BASIC_AUTH_PASSWORD
+                ):
                     return func(request, *args, **kwargs)
 
         response = HttpResponse("Unauthorized", status=401)
@@ -179,11 +186,15 @@ class CartAddView(View):
 
         cart, _ = get_cart_from_request(request, create_if_missing=True)
 
-        cart_item, created = CartItem.objects.update_or_create(
+        CartItem.objects.update_or_create(
             cart=cart,
             product=product,
-            defaults={'quantity': quantity} if not CartItem.objects.filter(cart=cart, product=product).exists() 
-                        else {'quantity': F('quantity') + quantity}
+            defaults={'quantity': quantity}
+            if not CartItem.objects.filter(
+                cart=cart,
+                product=product
+            ).exists()
+            else {'quantity': F('quantity') + quantity}
         )
         
         messages.success(request, mark_safe(f'{product.name}をカートに追加しました。'))

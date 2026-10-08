@@ -8,6 +8,10 @@ from .models import Order
 
 def passes_luhn_check(card_number):
     """カード番号の各桁からチェックサムを計算する。"""
+    # カード番号を右端から読む
+    # 右から2番目、4番目、6番目……の数字を2倍する
+    # 2倍した結果が10以上なら9を引く
+    # 全数字の合計が10で割り切れば合格
     total = 0
 
     for index, character in enumerate(reversed(card_number)):

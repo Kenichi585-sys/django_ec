@@ -11,7 +11,19 @@ Django で構築した EC サイトのデモアプリケーションです。商
 | 項目     | 内容 |
 | -------- | ---- |
 | 商品一覧 | [商品一覧](https://hc-ec-site-ca537aeee08e.herokuapp.com/products/) |
-| 管理画面 | [商品管理一覧](https://hc-ec-site-ca537aeee08e.herokuapp.com/products/manage/products/)<br>Basic 認証: `admin` / `pw` ※デモ用 |
+| 管理画面 | [商品管理一覧](https://hc-ec-site-ca537aeee08e.herokuapp.com/products/manage/products/)（Basic 認証） |
+
+### 疑似決済の入力例
+
+| 項目 | 入力例 |
+| ---- | ---- |
+| カード名義 | `TARO YAMADA` |
+| カード番号 | `4242424242424242` |
+| 有効期限 | `12/99` |
+
+`4242424242424242` は [Stripe がテスト用に公開している番号](https://docs.stripe.com/testing#cards)で、Luhn（ルーン）チェックを通過します。このアプリは Stripe と連携しておらず、入力形式の検証だけを行う疑似決済です。実在するカード情報は入力しないでください。
+
+Luhn チェックでは、最後の1桁をチェックディジットとして、所定の計算後の合計が10で割り切れるかを確認します。そのため、ランダムな16桁の数字はエラーになる場合があります。
 
 ### デモ用クーポンコード
 
@@ -104,6 +116,8 @@ CLOUDINARY_API_KEY=<Cloudinary API key>
 CLOUDINARY_API_SECRET=<Cloudinary API secret>
 EMAIL_HOST_USER=<Gmail アドレス（任意）>
 EMAIL_HOST_PASSWORD=<Gmail アプリパスワード（任意）>
+BASIC_AUTH_USERNAME=<管理画面用ユーザー名>
+BASIC_AUTH_PASSWORD=<管理画面用パスワード>
 ```
 
 ### 3. Docker を起動
@@ -127,7 +141,5 @@ docker-compose exec web python manage.py promotion_code_generate
 | ページ   | URL                                                                        |
 | -------- | -------------------------------------------------------------------------- |
 | 商品一覧 | http://localhost:3000/products/                                            |
-| 管理画面 | 商品一覧右上の「商品管理画面を見る」（Basic 認証: `admin` / `pw` ※デモ用） |
 
-> **管理画面への導線について**  
-> 商品一覧に管理画面へのボタンを置いています。実際の EC サイトでは、一般ユーザー向けのページから管理画面へリンクすることはありませんが、本プロジェクトではポートフォリオとして管理機能を確認しやすくするため、このボタンを設置しています。
+管理画面は Basic 認証で保護しています。認証情報は公開していません。
