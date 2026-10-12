@@ -155,8 +155,13 @@ class ProductDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        related_products = Product.objects.exclude(pk=self.object.pk).order_by('-pk')[:4]
-        context['related_products'] = related_products
+        other_products = (
+            Product.objects
+            .filter(is_available=True)
+            .exclude(pk=self.object.pk)
+            .order_by('-pk')[:4]
+        )
+        context['other_products'] = other_products
         return context
     
 

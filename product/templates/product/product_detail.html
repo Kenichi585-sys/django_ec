@@ -76,18 +76,18 @@
 
 <section class="py-5 bg-light">
   <div class="container px-4 px-lg-5 mt-5">
-    <h2 class="fw-bolder mb-4">関連商品</h2>
+    <h2 class="fw-bolder mb-4">その他の商品</h2>
     <div
       class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center"
     >
-      {% for related_product in related_products %}
+      {% for other_product in other_products %}
       <div class="col mb-5">
         <div class="card h-100">
-          {% if related_product.image %}
+          {% if other_product.image %}
           <img
             class="card-img-top"
-            src="{{ related_product.image.url }}"
-            alt="{{ related_product.name }}"
+            src="{{ other_product.image.url }}"
+            alt="{{ other_product.name }}"
             width="300"
             height="300"
           />
@@ -101,15 +101,15 @@
           {% endif %}
           <div class="card-body p-4">
             <div class="text-center">
-              <h3 class="fw-bolder fs-5">{{ related_product.name }}</h3>
-              ¥{{ related_product.price|floatformat:0|intcomma }}
+              <h3 class="fw-bolder fs-5">{{ other_product.name }}</h3>
+              ¥{{ other_product.price|floatformat:0|intcomma }}
             </div>
           </div>
           <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
             <div class="text-center">
               <a
                 class="btn btn-outline-dark mt-auto"
-                href="{% url 'product:product_detail' related_product.pk %}"
+                href="{% url 'product:product_detail' other_product.pk %}"
               >詳細を見る</a>
             </div>
           </div>
