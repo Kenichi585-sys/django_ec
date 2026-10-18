@@ -9,8 +9,6 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.views import View
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib import messages
-from django.utils.safestring import mark_safe
-from django.db.models import F
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import transaction, IntegrityError, OperationalError
@@ -19,6 +17,8 @@ from .models import Product, Cart, CartItem, Order, OrderItem, PromotionCode
 from .forms import OrderForm
 
 logger = logging.getLogger(__name__)
+
+MAX_CART_QUANTITY = 99
 
 
 def fetch_unused_promotion(code: Optional[str]) -> Optional[PromotionCode]:
@@ -187,22 +187,33 @@ class CartAddView(View):
             messages.warning(request, f'{product.name}は現在ご購入いただけません。')
             return redirect_after_cart_add(request, pk)
 
-        quantity = int(request.POST.get('quantity', 1))
+        try:
+            quantity = int(request.POST.get('quantity', 1))
+        except (TypeError, ValueError):
+            messages.error(request, '数量は1〜99の整数で入力してください。')
+            return redirect_after_cart_add(request, pk)
+
+        if not 1 <= quantity <= MAX_CART_QUANTITY:
+            messages.error(request, '数量は1〜99の整数で入力してください。')
+            return redirect_after_cart_add(request, pk)
 
         cart, _ = get_cart_from_request(request, create_if_missing=True)
 
-        CartItem.objects.update_or_create(
+        cart_item, created = CartItem.objects.get_or_create(
             cart=cart,
             product=product,
-            defaults={'quantity': quantity}
-            if not CartItem.objects.filter(
-                cart=cart,
-                product=product
-            ).exists()
-            else {'quantity': F('quantity') + quantity}
+            defaults={'quantity': quantity},
         )
+
+        if not created:
+            new_quantity = cart_item.quantity + quantity
+            if new_quantity > MAX_CART_QUANTITY:
+                messages.error(request, 'カートに入れられる数量は1商品につき99個までです。')
+                return redirect_after_cart_add(request, pk)
+            cart_item.quantity = new_quantity
+            cart_item.save(update_fields=['quantity'])
         
-        messages.success(request, mark_safe(f'{product.name}をカートに追加しました。'))
+        messages.success(request, f'{product.name}をカートに追加しました。')
         return redirect_after_cart_add(request, pk)
 
 
