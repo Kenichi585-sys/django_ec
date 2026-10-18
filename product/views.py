@@ -9,8 +9,6 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.views import View
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib import messages
-from django.utils.safestring import mark_safe
-from django.db.models import F
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import transaction, IntegrityError, OperationalError
@@ -19,6 +17,8 @@ from .models import Product, Cart, CartItem, Order, OrderItem, PromotionCode
 from .forms import OrderForm
 
 logger = logging.getLogger(__name__)
+
+MAX_CART_QUANTITY = 99
 
 
 def fetch_unused_promotion(code: Optional[str]) -> Optional[PromotionCode]:
@@ -122,12 +122,19 @@ def basic_auth_required(func):
         if auth_header:
             try:
                 auth_type, auth_string = auth_header.split(' ', 1)
+                if auth_type.lower() != 'basic':
+                    raise ValueError('Unsupported authorization scheme')
                 auth_decoded = base64.b64decode(auth_string).decode('utf-8')
                 username, password = auth_decoded.split(':', 1)
             except (ValueError, Exception):
                 pass
             else:
-                if username == 'admin' and password == 'pw':
+                if (
+                    settings.BASIC_AUTH_USERNAME
+                    and settings.BASIC_AUTH_PASSWORD
+                    and username == settings.BASIC_AUTH_USERNAME
+                    and password == settings.BASIC_AUTH_PASSWORD
+                ):
                     return func(request, *args, **kwargs)
 
         response = HttpResponse("Unauthorized", status=401)
@@ -148,8 +155,13 @@ class ProductDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        related_products = Product.objects.exclude(pk=self.object.pk).order_by('-pk')[:4]
-        context['related_products'] = related_products
+        other_products = (
+            Product.objects
+            .filter(is_available=True)
+            .exclude(pk=self.object.pk)
+            .order_by('-pk')[:4]
+        )
+        context['other_products'] = other_products
         return context
     
 
@@ -175,18 +187,33 @@ class CartAddView(View):
             messages.warning(request, f'{product.name}は現在ご購入いただけません。')
             return redirect_after_cart_add(request, pk)
 
-        quantity = int(request.POST.get('quantity', 1))
+        try:
+            quantity = int(request.POST.get('quantity', 1))
+        except (TypeError, ValueError):
+            messages.error(request, '数量は1〜99の整数で入力してください。')
+            return redirect_after_cart_add(request, pk)
+
+        if not 1 <= quantity <= MAX_CART_QUANTITY:
+            messages.error(request, '数量は1〜99の整数で入力してください。')
+            return redirect_after_cart_add(request, pk)
 
         cart, _ = get_cart_from_request(request, create_if_missing=True)
 
-        cart_item, created = CartItem.objects.update_or_create(
+        cart_item, created = CartItem.objects.get_or_create(
             cart=cart,
             product=product,
-            defaults={'quantity': quantity} if not CartItem.objects.filter(cart=cart, product=product).exists() 
-                        else {'quantity': F('quantity') + quantity}
+            defaults={'quantity': quantity},
         )
+
+        if not created:
+            new_quantity = cart_item.quantity + quantity
+            if new_quantity > MAX_CART_QUANTITY:
+                messages.error(request, 'カートに入れられる数量は1商品につき99個までです。')
+                return redirect_after_cart_add(request, pk)
+            cart_item.quantity = new_quantity
+            cart_item.save(update_fields=['quantity'])
         
-        messages.success(request, mark_safe(f'{product.name}をカートに追加しました。'))
+        messages.success(request, f'{product.name}をカートに追加しました。')
         return redirect_after_cart_add(request, pk)
 
 
@@ -290,7 +317,7 @@ def order_create(request):
                     order = form.save(commit=False)
                     total = cart.get_total_price() - discount
                     order.total_price = max(0, total)
-                    order.status = 'paid'         
+                    order.status = 'paid'
                     order.save()
                     
                     if promo_obj:
@@ -344,5 +371,3 @@ def apply_coupon(request):
             messages.success(request, f"クーポン「{code_str}」を適用しました。")
 
     return redirect('product:cart_detail')
-
-

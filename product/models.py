@@ -66,16 +66,13 @@ class CartItem(models.Model):
         
 
 class Order(models.Model):
-    STATUS_CHOICES = [('pending', '支払い待ち'), ('paid', '支払いずみ')]
+    STATUS_CHOICES = [('pending', '支払い待ち'), ('paid', '支払い済み（疑似決済）')]
 
     last_name = models.CharField(max_length=50, verbose_name='姓')
     first_name = models.CharField(max_length=50, verbose_name='名')
     username = models.CharField(max_length=50, verbose_name='ユーザー名')
     email = models.EmailField(verbose_name='メールアドレス')
     address = models.CharField(max_length=250, verbose_name='住所')
-    card_name = models.CharField(max_length=100, verbose_name='カード名義')
-    card_number = models.CharField(max_length=16, verbose_name='カード番号')
-    card_expiry = models.CharField(max_length=5, verbose_name='有効期限')
 
     total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='合計金額')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
@@ -116,4 +113,3 @@ class PromotionCode(models.Model):
 
     class Meta:
         verbose_name_plural = 'プロモーションコード'
-
