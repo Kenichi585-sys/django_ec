@@ -153,7 +153,6 @@
                         <input id="credit" name="paymentMethod" type="radio" class="form-check-input" checked required>
                         <label class="form-check-label" for="credit">クレジットカード</label>
                     </div>
-                    <small class="text-muted">デモ用の疑似決済です。実在するカード情報は入力しないでください。入力内容は保存されません。</small>
                 </div>
 
                 <div class="row gy-3">
@@ -175,8 +174,6 @@
                         <div class="text-danger small mt-1">
                             {% for error in form.card_number.errors %}{{ error }}{% endfor %}
                         </div>
-                        {% else %}
-                        <small class="text-muted">動作確認用: 4242424242424242（ハイフンなし）</small>
                         {% endif %}
                     </div>
                     <div class="col-md-3">
@@ -186,8 +183,6 @@
                         <div class="text-danger small mt-1">
                             {% for error in form.card_expiry.errors %}{{ error }}{% endfor %}
                         </div>
-                        {% else %}
-                        <small class="text-muted">動作確認用: 12/99</small>
                         {% endif %}
                     </div>
                 </div>
